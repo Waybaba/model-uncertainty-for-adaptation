@@ -149,8 +149,10 @@ def main():
         src_transforms, tgt_transforms = get_train_transforms(args, mine_id)
         srcds = CityscapesDataset(transforms=src_transforms)
 
-        tgtds = CrossCityDataset(args.data_tgt_dir.format(args.city), tgt_train_lst,
-                                  pseudo_root=save_pseudo_label_path, transforms=tgt_transforms)
+        # tgtds = CrossCityDataset(args.data_tgt_dir.format(args.city), tgt_train_lst,
+        #                           pseudo_root=save_pseudo_label_path, transforms=tgt_transforms)
+
+        tgtds = CityscapesDataset(pseudo_root=save_pseudo_label_path, transforms=tgt_transforms)
         
         if args.no_src_data:
             mixtrainset = tgtds
