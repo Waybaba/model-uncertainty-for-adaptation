@@ -7,9 +7,10 @@
 
 
 import argparse
+import os
 
-
-DATA_TGT_DIRECTORY = '/path/to/cross/city/folder'
+# $UDATADIR/NTHU
+DATA_TGT_DIRECTORY = os.environ.get('UDATADIR') + '/NTHU' # ! change this
 DATA_TGT_TRAIN_LIST_PATH = './datasets/NTHU_list/{}/train.txt'
 DATA_TGT_TEST_LIST_PATH = './datasets/NTHU_list/{}/test.txt'
 ### train ###

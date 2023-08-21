@@ -11,10 +11,10 @@ import os.path as osp
 import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset, Subset
-
+import os
 
 class CityscapesDataset(Dataset):
-    def __init__(self, root=r'/path/to/cityscapes',
+    def __init__(self, root=f'{os.environ.get("UDATADIR")}/Cityscapes',
                        list_path='./datasets/city_list/train.txt',
                        max_iters=None, transforms=None):
         self.root = root
