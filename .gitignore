@@ -6,6 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
+
 # Distribution / packaging
 .Python
 build/
@@ -139,3 +140,6 @@ cython_debug/
 temp/
 pretrained/
 test.py
+
+
+/temp*

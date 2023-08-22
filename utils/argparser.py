@@ -124,7 +124,7 @@ def get_arguments():
     BASE_SIZE = (1024, 512)
 
     parser = common_args()
-    parser.add_argument('--city', type=str, choices=['Rio', 'Rome', 'Taipei', 'Tokyo'])
+    parser.add_argument('--city', type=str, choices=['Rio', 'Rome', 'Taipei', 'Tokyo', 'cityscapes'])
     parser.add_argument('--base-size', type=int, nargs=2, default=BASE_SIZE)
     
     parser.add_argument("--num-classes", type=int, default=NUM_CLASSES,

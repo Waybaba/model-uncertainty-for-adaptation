@@ -20,7 +20,7 @@ ln -s $MODEL_DIR pretrained
 # dataset
 `
 change path in utils/argparser.py for NTHU to xxx
-change cityscape in datasets/new_datasets.py to root=f'{os.environ.get("UDATADIR")}/Cityscapes',
+change cityscape in datasets/new_datasets.py to root=f'{os.environ.get("UDATADIR")}/Cityscapes'
 `
 
 

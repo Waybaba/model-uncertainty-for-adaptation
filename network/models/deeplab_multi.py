@@ -181,9 +181,37 @@ class ResNetMulti(nn.Module):
         return [{'params': self.get_1x_lr_params_NOscale(), 'lr': args.learning_rate},
                 {'params': self.get_10x_lr_params(), 'lr': 10 * args.learning_rate}]
 
+import numpy as np
+
+class GTA2CityTransResNetMulti(ResNetMulti):
+    def __init__(self, block, layers, num_classes):
+        super(GTA2CityTransResNetMulti, self).__init__(block, layers, num_classes)
+    #     self.source_mapping = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18])
+    #     self.target_mapping = np.array([0, 1, 7, 11, 12, 13, 17, 18, 1, 2, 4, 5, 6, 8, 9, 10, 14, 15, 16])
+
+    # def convert_labels(self, source_labels):
+    #     converted_labels = np.zeros_like(source_labels)
+    #     for src_label, tgt_label in zip(self.source_mapping, self.target_mapping):
+    #         converted_labels[source_labels == src_label] = tgt_label
+    #     return converted_labels
+
+    # def forward(self, x, return_features=False):
+    #     out = super().forward(x, return_features)
+    #     if return_features:
+    #         out_label, out_features = out
+    #         converted_labels = self.convert_labels(out_label.cpu().detach().numpy())
+    #         out_label = torch.from_numpy(converted_labels).to(out_label.device)
+    #         return out_label, out_features
+    #     else:
+    #         converted_labels = self.convert_labels(out.cpu().detach().numpy())
+    #         return torch.from_numpy(converted_labels).to(out.device)
+
 
 def DeeplabMulti(num_classes=21, pretrained=True):
-    model = ResNetMulti(Bottleneck, [3, 4, 23, 3], num_classes)
+    if num_classes == 19:
+        model = GTA2CityTransResNetMulti(Bottleneck, [3, 4, 23, 3], num_classes)
+    else:
+        model = ResNetMulti(Bottleneck, [3, 4, 23, 3], num_classes)
 
     if pretrained:
         restore_from = './pretrained_model/DeepLab_resnet_pretrained_init-f81d91e8.pth'

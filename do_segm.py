@@ -36,11 +36,23 @@ if not os.path.exists(args.save):
     os.makedirs(args.save)
 logger = set_logger(args.save, 'training_logger', False)
 
+class_num = 19 if (
+    "GTA" in args.restore_from or "SYNTHIA" in args.restore_from \
+) else 13
+args.num_classes = class_num
 
 def make_network(args):
-    model = DeepLab(13, False)
+    model = DeepLab(class_num, False)
     model = torch.nn.DataParallel(model)
-    sd = torch.load('pretrained/Cityscapes_source_class13.pth', map_location=device)['state_dict']
+    # sd = torch.load('pretrained/Cityscapes_source_class13.pth', map_location=device)['state_dict']
+    rf = torch.load(args.restore_from, map_location=device)
+    sd = rf['state_dict'] if 'state_dict' in rf else rf
+    if 'state_dict' in rf:
+        sd = rf['state_dict']
+    else:
+        sd = rf
+        sd = {"module."+k: v for k, v in sd.items()}
+    # add prefix 'module.' to every key
     model.load_state_dict(sd)
 
     model = model.module
@@ -53,10 +65,20 @@ def make_network(args):
 def test(model, round_idx):
     transforms = get_test_transforms()
     
-    ds = CrossCityDataset(root=args.data_tgt_dir, list_path=args.data_tgt_test_list.format(args.city), transforms=transforms)
+    if args.city != 'cityscapes':
+        ds = CrossCityDataset(root=args.data_tgt_dir, list_path=args.data_tgt_test_list.format(args.city), transforms=transforms)
+        # tgtds = CrossCityDataset(args.data_tgt_dir.format(args.city), tgt_train_lst,
+        #                         pseudo_root=save_pseudo_label_path, transforms=tgt_transforms)
+    else:
+        # ds = CrossCityDataset(root=args.data_tgt_dir, list_path=args.data_tgt_test_list.format(args.city), transforms=transforms)
+        ds = CityscapesDataset(
+            # pseudo_root=save_pseudo_label_path, 
+            list_path='./datasets/city_list/val.txt',
+            transforms=transforms)
+        
     loader = torch.utils.data.DataLoader(ds, batch_size=6, pin_memory=torch.cuda.is_available(), num_workers=6)
 
-    scorer = ScoreUpdater(13, len(loader))
+    scorer = ScoreUpdater(class_num, len(loader))
     logger.info('###### Start evaluating in target domain test set in round {}! ######'.format(round_idx))
     start_eval = time.time()
     model.eval()
@@ -116,7 +138,8 @@ def main():
         os.makedirs(save_lst_path)
 
     tgt_portion = args.init_tgt_port
-    image_tgt_list, image_name_tgt_list, _, _ = parse_split_list(args.data_tgt_train_list.format(args.city))
+    if args.city != 'cityscapes':
+        image_tgt_list, image_name_tgt_list, _, _ = parse_split_list(args.data_tgt_train_list.format(args.city))
 
     model = make_network(args).to(device)
     test(model, -1)
@@ -140,7 +163,8 @@ def main():
                                         save_pseudo_label_path, save_pseudo_label_color_path, save_round_eval_path, args)
 
         tgt_portion = min(tgt_portion + args.tgt_port_step, args.max_tgt_port)
-        tgt_train_lst = savelst_tgt(image_tgt_list, image_name_tgt_list, save_lst_path, save_pseudo_label_path)
+        if args.city != 'cityscapes':
+            tgt_train_lst = savelst_tgt(image_tgt_list, image_name_tgt_list, save_lst_path, save_pseudo_label_path)
 
         rare_id = np.load(save_stats_path + '/rare_id_round' + str(round_idx) + '.npy')
         mine_id = np.load(save_stats_path + '/mine_id_round' + str(round_idx) + '.npy')
@@ -149,10 +173,14 @@ def main():
         src_transforms, tgt_transforms = get_train_transforms(args, mine_id)
         srcds = CityscapesDataset(transforms=src_transforms)
 
-        # tgtds = CrossCityDataset(args.data_tgt_dir.format(args.city), tgt_train_lst,
-        #                           pseudo_root=save_pseudo_label_path, transforms=tgt_transforms)
-
-        tgtds = CityscapesDataset(pseudo_root=save_pseudo_label_path, transforms=tgt_transforms)
+        if args.city != 'cityscapes':
+            tgtds = CrossCityDataset(args.data_tgt_dir.format(args.city), tgt_train_lst,
+                                      pseudo_root=save_pseudo_label_path, transforms=tgt_transforms)
+        else:
+            tgtds = CityscapesDataset(
+                # pseudo_root=save_pseudo_label_path, 
+                list_path='./datasets/city_list/val.txt',
+                transforms=tgt_transforms)
         
         if args.no_src_data:
             mixtrainset = tgtds

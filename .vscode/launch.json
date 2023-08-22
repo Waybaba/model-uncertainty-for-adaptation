@@ -1,0 +1,43 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Python: Current File",
+			"type": "python",
+			"request": "launch",
+			"program": "${file}",
+			"console": "integratedTerminal",
+			"justMyCode": true
+		},
+		// python do_segm.py --city Rio --no-src-data --freeze-classifier --unc-noise --lambda-ce 1 --lambda-ent 1  --save ./temp --lambda-ssl 0.1 --restore-from ./pretrained/GTA5_source.pth
+		{
+			"name": "do_segm.py",
+			"type": "python",
+			"request": "launch",
+			"program": "${workspaceFolder}/do_segm.py",
+			"console": "integratedTerminal",
+			"args": [
+				"--city",
+				"cityscapes", // If use cityscapes, means switch to Cityscapes dataset. cityscapes, Rio
+				"--no-src-data",
+				"--freeze-classifier",
+				"--unc-noise",
+				"--lambda-ce",
+				"1",
+				"--lambda-ent",
+				"1",
+				"--save",
+				"./temp",
+				"--lambda-ssl",
+				"0.1",
+				"--restore-from",
+				"./pretrained/GTA5_source.pth",
+				"--num-classes=19",
+				// "./pretrained/Cityscapes_source_class13.pth"
+			]
+		},
+	]
+}

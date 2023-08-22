@@ -15,7 +15,8 @@ import torch.nn as nn
 from PIL import Image
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
+from datasets import (CityscapesDataset, CrossCityDataset, get_test_transforms,
+                      get_train_transforms)
 from datasets import CrossCityDataset, get_val_transforms
 from utils import ScoreUpdater, colorize_mask
 
@@ -29,8 +30,18 @@ def validate_model(model, save_round_eval_path, round_idx, args):
     ## Doubles as a pseudo label generator
 
     val_transforms = get_val_transforms(args)
-    dataset = CrossCityDataset(args.data_tgt_dir,
-                               args.data_tgt_train_list.format(args.city), transforms=val_transforms)
+    if args.city != 'cityscapes':
+        dataset = CrossCityDataset(root=args.data_tgt_dir, list_path=args.data_tgt_test_list.format(args.city), transforms=transforms)
+        # tgtds = CrossCityDataset(args.data_tgt_dir.format(args.city), tgt_train_lst,
+        #                         pseudo_root=save_pseudo_label_path, transforms=tgt_transforms)
+    else:
+        # ds = CrossCityDataset(root=args.data_tgt_dir, list_path=args.data_tgt_test_list.format(args.city), transforms=transforms)
+        dataset = CityscapesDataset(
+            # pseudo_root=save_pseudo_label_path, 
+            list_path='./datasets/city_list/val.txt',
+            transforms=val_transforms)
+    # dataset = CrossCityDataset(args.data_tgt_dir,
+    #                            args.data_tgt_train_list.format(args.city), transforms=val_transforms)
     loader = DataLoader(dataset, batch_size=12, num_workers=4, pin_memory=torch.cuda.is_available())
 
     scorer = ScoreUpdater(args.num_classes, len(loader))
