@@ -118,7 +118,7 @@ def get_arguments():
     
     # DATA_SRC_LIST_PATH = './dataset/list/gta5/train_small.lst'
 
-    RESTORE_FROM = './pretrained/Cityscapes_source_class13.pth'
+    RESTORE_FROM = '/data/models/seg_models/UR/Cityscapes_source_class13.pth'
     NUM_CLASSES = 13
     INIT_SRC_PORT = 1
     BASE_SIZE = (1024, 512)
