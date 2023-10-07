@@ -15,8 +15,9 @@ import os
 
 class CityscapesDataset(Dataset):
     def __init__(self, root=f'{os.environ.get("UDATADIR")}/Cityscapes',
+                        pseudo_root=None,
                        list_path='./datasets/city_list/train.txt',
-                       max_iters=None, transforms=None):
+                       max_iters=None, transforms=None, debug=False):
         self.root = root
         self.list_path = list_path
         self.transforms = transforms
@@ -41,13 +42,18 @@ class CityscapesDataset(Dataset):
             img_file = osp.join(self.root, img_name)
 
             label_file = osp.join(self.root, label_name)
-
+            if pseudo_root is None:
+                label_file = osp.join(self.root, label_name)
+            else:
+                label_file = osp.join(pseudo_root, img_name.split("/")[-1])
             self.files.append({
                 "img": img_file,
                 "label": label_file,
                 "img_name": img_name,
                 "label_name": label_name
             })
+        if debug:
+            self.files = self.files[:20]
 
     def __len__(self):
         return len(self.files)

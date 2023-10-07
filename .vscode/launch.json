@@ -36,6 +36,11 @@
 				"--restore-from",
 				"./pretrained/GTA5_source.pth",
 				"--num-classes=19",
+				// "--debug", // would visulize class
+				"--batch-size",
+				"4",
+				"--learning-rate",
+				"1e-9",
 				// "./pretrained/Cityscapes_source_class13.pth"
 			]
 		},

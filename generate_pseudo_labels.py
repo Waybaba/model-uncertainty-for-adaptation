@@ -39,7 +39,8 @@ def validate_model(model, save_round_eval_path, round_idx, args):
         dataset = CityscapesDataset(
             # pseudo_root=save_pseudo_label_path, 
             list_path='./datasets/city_list/val.txt',
-            transforms=val_transforms)
+            transforms=val_transforms,
+            debug=args.debug)
     # dataset = CrossCityDataset(args.data_tgt_dir,
     #                            args.data_tgt_train_list.format(args.city), transforms=val_transforms)
     loader = DataLoader(dataset, batch_size=12, num_workers=4, pin_memory=torch.cuda.is_available())

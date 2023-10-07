@@ -17,10 +17,10 @@ def upsample(num_classes=13):
 
 
 class DropOutDecoder(nn.Module):
-    def __init__(self, drop_rate=0.3, decoder=None):
+    def __init__(self, drop_rate=0.3, decoder=None, num_classes=None):
         super().__init__()
         self.dropout = nn.Dropout2d(p=drop_rate)
-        self.upsample = upsample() if decoder is None else decoder
+        self.upsample = upsample(num_classes) if decoder is None else decoder
 
     def forward(self, x, *ig, **ign):
         x = self.upsample(self.dropout(x))
@@ -51,9 +51,9 @@ class JointSegAuxDecoderModel(nn.Module):
 
 
 class NoisyDecoders(nn.Module):
-    def __init__(self, n_decoders, dropout):
+    def __init__(self, n_decoders, dropout, num_classes):
         super().__init__()
-        self.decoders = nn.ModuleList([DropOutDecoder(drop_rate=dropout) for _ in range(n_decoders)])
+        self.decoders = nn.ModuleList([DropOutDecoder(drop_rate=dropout, num_classes=num_classes) for _ in range(n_decoders)])
 
     def forward(self, x):
         return [decoder(x) for decoder in self.decoders]

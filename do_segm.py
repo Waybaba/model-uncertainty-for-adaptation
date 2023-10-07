@@ -27,19 +27,6 @@ from utils import (ScoreUpdater, adjust_learning_rate, cleanup,
                    savelst_tgt, seed_torch, self_training_regularized_infomax,
                    self_training_regularized_infomax_cct, set_logger)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-osp = os.path
-
-
-args = get_arguments()
-if not os.path.exists(args.save):
-    os.makedirs(args.save)
-logger = set_logger(args.save, 'training_logger', False)
-
-class_num = 19 if (
-    "GTA" in args.restore_from or "SYNTHIA" in args.restore_from \
-) else 13
-args.num_classes = class_num
 
 def make_network(args):
     model = DeepLab(class_num, False)
@@ -57,7 +44,7 @@ def make_network(args):
 
     model = model.module
     if args.unc_noise:
-        aux_decoders = NoisyDecoders(args.decoders, args.dropout)
+        aux_decoders = NoisyDecoders(args.decoders, args.dropout, args.num_classes)
         model = JointSegAuxDecoderModel(model, aux_decoders)
     return model
 
@@ -74,7 +61,7 @@ def test(model, round_idx):
         ds = CityscapesDataset(
             # pseudo_root=save_pseudo_label_path, 
             list_path='./datasets/city_list/val.txt',
-            transforms=transforms)
+            transforms=transforms, debug=args.debug)
         
     loader = torch.utils.data.DataLoader(ds, batch_size=6, pin_memory=torch.cuda.is_available(), num_workers=6)
 
@@ -90,6 +77,7 @@ def test(model, round_idx):
     model.train()
     logger.info('###### Finish evaluating in target domain test set in round {}! Time cost: {:.2f} seconds. ######'.format(
         round_idx, time.time()-start_eval))
+    scorer.scores()
 
 
 def train(mix_trainloader, model, interp, optimizer, args):
@@ -119,6 +107,21 @@ def train(mix_trainloader, model, interp, optimizer, args):
 
 
 def main():
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = "cuda"
+    osp = os.path
+
+
+    args = get_arguments()
+    if not os.path.exists(args.save):
+        os.makedirs(args.save)
+    logger = set_logger(args.save, 'training_logger', False)
+
+    class_num = 19 if (
+        "GTA" in args.restore_from or "SYNTHIA" in args.restore_from \
+    ) else 13
+    args.num_classes = class_num
+
     seed_torch(args.randseed)
 
     logger.info('Starting training with arguments')
@@ -142,7 +145,7 @@ def main():
         image_tgt_list, image_name_tgt_list, _, _ = parse_split_list(args.data_tgt_train_list.format(args.city))
 
     model = make_network(args).to(device)
-    test(model, -1)
+    # test(model, -1)
     for round_idx in range(args.num_rounds):
         save_round_eval_path = osp.join(args.save, str(round_idx))
         save_pseudo_label_color_path = osp.join(
@@ -167,24 +170,26 @@ def main():
             tgt_train_lst = savelst_tgt(image_tgt_list, image_name_tgt_list, save_lst_path, save_pseudo_label_path)
 
         rare_id = np.load(save_stats_path + '/rare_id_round' + str(round_idx) + '.npy')
-        mine_id = np.load(save_stats_path + '/mine_id_round' + str(round_idx) + '.npy')
+        mine_id = np.load(save_stats_path + '/mine_id_round' + str(round_idx) + '.npy') #  # ! mine id does not used later
         # mine_chance = args.mine_chance
 
         src_transforms, tgt_transforms = get_train_transforms(args, mine_id)
-        srcds = CityscapesDataset(transforms=src_transforms)
+        srcds = CityscapesDataset(transforms=src_transforms, debug=args.debug)
 
         if args.city != 'cityscapes':
             tgtds = CrossCityDataset(args.data_tgt_dir.format(args.city), tgt_train_lst,
                                       pseudo_root=save_pseudo_label_path, transforms=tgt_transforms)
         else:
             tgtds = CityscapesDataset(
-                # pseudo_root=save_pseudo_label_path, 
+                pseudo_root=save_pseudo_label_path, 
                 list_path='./datasets/city_list/val.txt',
-                transforms=tgt_transforms)
+                transforms=tgt_transforms,
+                debug=args.debug)
         
-        if args.no_src_data:
+        if args.no_src_data: # ! ? TODO
             mixtrainset = tgtds
         else:
+            raise ValueError("We only consider no source data setting.")
             mixtrainset = torch.utils.data.ConcatDataset([srcds, tgtds])
 
         mix_loader = DataLoader(mixtrainset, batch_size=args.batch_size, shuffle=True,

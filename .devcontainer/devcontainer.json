@@ -9,6 +9,8 @@
 		"--volume", "${localEnv:UPRJDIR}:/code",
 		"--volume", "${localEnv:UOUTDIR}:/output",
 		"--shm-size", "16G",
+		// CUDA_LAUNCH_BLOCKING=1
+		"--env", "CUDA_LAUNCH_BLOCKING=1",
 	],
 	"overrideCommand": false, // important! the default true will override the command in the dockerfile as "/bin/sh -c "while sleep 1000; do :; done"" so that tensorboard service will be down
 	"extensions": [
