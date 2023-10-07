@@ -1,0 +1,11 @@
+# @package _global_
+
+defaults:
+  - train_controller.yaml
+
+
+modelmodule:
+  _target_: src.modelmodule.EnvModelModule
+  net: 
+    _target_: src.modelmodule.EnvModelWrapper
+    _partial_: true

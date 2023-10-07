@@ -1,0 +1,49 @@
+data_tgt_dir: ${UDATADIR}/NTHU
+data_tgt_train_list: ./datasets/NTHU_list/{}/train.txt
+data_tgt_test_list: ./datasets/NTHU_list/{}/test.txt
+debug: true
+batch_size: 4
+learning_rate: 1.0e-09
+power: 0.0
+weight_decay: 0.0005
+momentum: 0.9
+save: ./temp
+kc_policy: cb
+kc_value: conf
+ds_rate: 10
+init_tgt_port: 0.2
+max_tgt_port: 0.5
+tgt_port_step: 0.05
+src_port_step: 0
+randseed: 3
+no_src_data: true
+info_max_loss: false
+lambda_ent: 1
+lambda_div: 0.0
+lambda_ce: 1
+lambda_unc: 0.1
+lambda_ssl: 0.1
+freeze_classifier: true
+unc_noise: true
+decoders: 4
+dropout: 0.5
+city: cityscapes
+base_size:
+- 1024
+- 512
+num_classes: 19
+restore_from: ./pretrained/GTA5_source.pth
+input_size:
+- 1024
+- 512
+train_scale_src:
+- 0.5
+- 1.5
+train_scale_tgt:
+- 0.5
+- 1.5
+num_rounds: 1
+epr: 1
+init_src_port: 1
+max_src_port: 1
+device: cuda

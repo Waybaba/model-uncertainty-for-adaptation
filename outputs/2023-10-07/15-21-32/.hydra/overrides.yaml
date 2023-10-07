@@ -1,0 +1,13 @@
+- city=cityscapes
+- no_src_data=true
+- freeze_classifier=true
+- unc_noise=true
+- lambda_ce=1
+- lambda_ent=1
+- lambda_ssl=0.1
+- save=./tempx
+- restore_from=./pretrained/GTA5_source.pth
+- num_classes=19
+- batch_size=4
+- learning_rate=1e-9
+- debug=true

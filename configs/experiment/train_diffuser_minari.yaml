@@ -1,0 +1,50 @@
+# @package _global_
+
+defaults:
+  - train_diffuser.yaml
+
+global_cfg:
+  horizon: 32
+
+datamodule:
+  batch_size: 256
+  dataset:
+    env: door-human-v1
+    mode: ep_multi_step%5 # ! multi_step%{step_num}, default
+
+modelmodule:
+  net:
+    diffusion:
+      n_timesteps: 20
+      # clip_denoised: true # ! different from maze in original paper
+    net: 
+      dim: 256
+      dim_mults: [1, 2, 4, 4, 4, 4]
+  controller:
+    # dir: ${oc.env:UOUTDIR}/hydra_log/RL_Diffuser/runs/2023-09-05_09-13-20_740659/
+    # dir: ${oc.env:UOUTDIR}/hydra_log/RL_Diffuser/multiruns/2023-08-30_08-31-28_530341/0
+    turn_on: false
+    dir: /output/hydra_log/RL_Diffuser_Debug/multiruns/2023-09-25_15-31-12_542816/0
+    epoch: last
+    policy:
+      _target_: diffuser.sampling.GuidedPolicy
+      _partial_: true
+      # guide: in python
+      # diffusion_model: in python
+      # normalizer:  in python
+      preprocess_fns: []
+      # the following are **sample_kwargs
+      sample_fn: 
+        # _target_: diffuser.sampling.n_step_guided_p_sample
+        _target_: diffuser.sampling.n_step_guided_p_sample_freedom_timetravel
+        _partial_: true
+      scale: 1.0
+      n_guide_steps: 1 # ! does not used, only use one step + time travel
+      t_stopgrad: 2 # positive: grad[t < t_stopgrad] = 0; bigger is noise
+      scale_grad_by_std: true
+      grad_interval: [0.1, 1.0]
+      travel_repeat: 1 # time travel
+      travel_interval: [0.1,0.9] # if float, would use [horizon*travel_interval, horizon]
+    plan_freq: 1.0
+    guide:
+      _target_: diffuser.sampling.DummyGuide

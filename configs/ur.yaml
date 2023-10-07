@@ -1,0 +1,58 @@
+# Dataset related configurations
+data_tgt_dir: './data/datasets/NTHU'
+data_tgt_train_list: './datasets/NTHU_list/{}/train.txt'
+data_tgt_test_list: './datasets/NTHU_list/{}/test.txt'
+city: 'cityscapes'
+
+# Debugging and Logging
+debug: false
+save: 'debug'
+
+# Training hyperparameters
+batch_size: 2
+learning_rate: 5e-5
+power: 0.0
+weight_decay: 0.0005
+momentum: 0.9
+num_rounds: 1
+epr: 1
+
+# Knowledge Consistency related configurations
+kc_policy: 'cb'
+kc_value: 'conf'
+ds_rate: 10
+init_tgt_port: 0.2
+max_tgt_port: 0.5
+tgt_port_step: 0.05
+init_src_port: 1
+max_src_port: 1
+src_port_step: 0
+randseed: 3
+
+# Regularization and loss weights
+lambda_ent: 1
+lambda_div: 0.0
+lambda_ce: 1
+lambda_unc: 0.1
+lambda_ssl: 0.1 # ! not used but in github run script
+
+# Neural Network Architecture details
+freeze_classifier: false
+unc_noise: false
+decoders: 4
+dropout: 0.5
+base_size: [1024, 512]
+num_classes: 13
+restore_from: '/data/models/seg_models/UR/Cityscapes_source_class13.pth'
+input_size: [1024, 512]
+train_scale_src: [0.5, 1.5]
+train_scale_tgt: [0.5, 1.5]
+
+# Miscellaneous
+device: cuda
+no_src_data: false
+info_max_loss: false
+
+
+tags: ["plightning"]
+task_name: "UR"

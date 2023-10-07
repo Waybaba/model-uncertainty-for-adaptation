@@ -5,6 +5,9 @@
 #
 # SPDX-License-Identifier: MIT
 
+import pyrootutils
+root = pyrootutils.setup_root(__file__, dotenv=True, pythonpath=True, indicator=["configs"])
+import hydra
 
 import os
 import shutil
@@ -29,10 +32,9 @@ from utils import (ScoreUpdater, adjust_learning_rate, cleanup,
 
 
 def make_network(args):
-    model = DeepLab(class_num, False)
+    model = DeepLab(args.num_classes, False)
     model = torch.nn.DataParallel(model)
-    # sd = torch.load('pretrained/Cityscapes_source_class13.pth', map_location=device)['state_dict']
-    rf = torch.load(args.restore_from, map_location=device)
+    rf = torch.load(args.restore_from, map_location=args.device)
     sd = rf['state_dict'] if 'state_dict' in rf else rf
     if 'state_dict' in rf:
         sd = rf['state_dict']
@@ -49,7 +51,7 @@ def make_network(args):
     return model
 
 
-def test(model, round_idx):
+def test(model, round_idx, args, logger):
     transforms = get_test_transforms()
     
     if args.city != 'cityscapes':
@@ -65,14 +67,14 @@ def test(model, round_idx):
         
     loader = torch.utils.data.DataLoader(ds, batch_size=6, pin_memory=torch.cuda.is_available(), num_workers=6)
 
-    scorer = ScoreUpdater(class_num, len(loader))
+    scorer = ScoreUpdater(args.num_classes, len(loader))
     logger.info('###### Start evaluating in target domain test set in round {}! ######'.format(round_idx))
     start_eval = time.time()
     model.eval()
     with torch.no_grad():
         for batch in loader:
             img, label, _ = batch
-            pred = model(img.to(device)).argmax(1).cpu()
+            pred = model(img.to(args.device)).argmax(1).cpu()
             scorer.update(pred.view(-1), label.view(-1))
     model.train()
     logger.info('###### Finish evaluating in target domain test set in round {}! Time cost: {:.2f} seconds. ######'.format(
@@ -80,7 +82,7 @@ def test(model, round_idx):
     scorer.scores()
 
 
-def train(mix_trainloader, model, interp, optimizer, args):
+def train(mix_trainloader, model, interp, optimizer, args, logger):
     """Create the model and start the training."""
     tot_iter = len(mix_trainloader)
     for i_iter, batch in enumerate(mix_trainloader):
@@ -94,11 +96,11 @@ def train(mix_trainloader, model, interp, optimizer, args):
             pred = model(images.to(device), training=True)
             loss = self_training_regularized_infomax(pred, labels.to(device), args)
         elif args.unc_noise:
-            pred, noise_pred = model(images.to(device), training=True)
-            loss = self_training_regularized_infomax_cct(pred, labels.to(device), noise_pred, args)
+            pred, noise_pred = model(images.to(args.device), training=True)
+            loss = self_training_regularized_infomax_cct(pred, labels.to(args.device), noise_pred, args)
         else:
-            pred = model(images.to(device))
-            loss = F.cross_entropy(pred, labels.to(device), ignore_index=255)
+            pred = model(images.to(args.device))
+            loss = F.cross_entropy(pred, labels.to(args.device), ignore_index=255)
 
         loss.backward()
         optimizer.step()
@@ -106,21 +108,25 @@ def train(mix_trainloader, model, interp, optimizer, args):
         logger.info('iter = {} of {} completed, loss = {:.4f}'.format(i_iter+1, tot_iter, loss.item()))
 
 
-def main():
+@hydra.main(version_base=None, config_path=str(root / "configs"), config_name="ur.yaml")	
+def main(args):
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     device = "cuda"
     osp = os.path
 
 
-    args = get_arguments()
+    # args = get_arguments()
     if not os.path.exists(args.save):
         os.makedirs(args.save)
     logger = set_logger(args.save, 'training_logger', False)
 
-    class_num = 19 if (
+    num_classes = 19 if (
         "GTA" in args.restore_from or "SYNTHIA" in args.restore_from \
     ) else 13
-    args.num_classes = class_num
+    args.num_classes = num_classes
+    args.device = device
+
+
 
     seed_torch(args.randseed)
 
@@ -202,7 +208,7 @@ def main():
         torch.backends.cudnn.benchmark = True
         start = time.time()
         for epoch in range(args.epr):
-            train(mix_loader, model, interp, optimizer, args)
+            train(mix_loader, model, interp, optimizer, args, logger)
             print('taking snapshot ...')
             torch.save(model.state_dict(), osp.join(args.save,
                                                     '2nthy_round' + str(round_idx) + '_epoch' + str(epoch) + '.pth'))
@@ -210,7 +216,7 @@ def main():
         
         logger.info('###### Finish model retraining dataset in round {}! Time cost: {:.2f} seconds. ######'.format(
             round_idx, end - start))
-        test(model, round_idx)
+        test(model, round_idx, args, logger)
         cleanup(args.save)
     cleanup(args.save)
     shutil.rmtree(save_pseudo_label_path)

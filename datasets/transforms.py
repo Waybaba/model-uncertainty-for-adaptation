@@ -89,8 +89,8 @@ class __RandomRotate:
 
 class RandomScaleCrop:
     def __init__(self, base_size, crop_size, scale, rare_ids, mine_probability):
-        self.base_size = base_size * (3 - len(base_size))
-        self.crop_size = crop_size * (3 - len(crop_size))
+        self.base_size = list(base_size) * (3 - len(base_size))
+        self.crop_size = list(crop_size) * (3 - len(crop_size))
         self.scale = scale
         self.rare_ids = rare_ids
         self.mine_prob = mine_probability

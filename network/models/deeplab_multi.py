@@ -213,14 +213,14 @@ def DeeplabMulti(num_classes=21, pretrained=True):
     else:
         model = ResNetMulti(Bottleneck, [3, 4, 23, 3], num_classes)
 
-    if pretrained:
-        restore_from = './pretrained_model/DeepLab_resnet_pretrained_init-f81d91e8.pth'
-        saved_state_dict = torch.load(restore_from)
+    # if pretrained:
+    #     restore_from = './pretrained_model/DeepLab_resnet_pretrained_init-f81d91e8.pth'
+    #     saved_state_dict = torch.load(restore_from)
 
-        new_params = model.state_dict().copy()
-        for i in saved_state_dict:
-            i_parts = i.split('.')
-            if not i_parts[1] == 'layer5':
-                new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
-        model.load_state_dict(new_params)
+    #     new_params = model.state_dict().copy()
+    #     for i in saved_state_dict:
+    #         i_parts = i.split('.')
+    #         if not i_parts[1] == 'layer5':
+    #             new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
+    #     model.load_state_dict(new_params)
     return model

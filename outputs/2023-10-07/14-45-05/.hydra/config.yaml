@@ -1,0 +1,68 @@
+data_tgt_directory: ${env:UDATADIR}/NTHU
+data_tgt_train_list_path: ./datasets/NTHU_list/{}/train.txt
+data_tgt_test_list_path: ./datasets/NTHU_list/{}/test.txt
+batch_size: 2
+randseed: 3
+learning_rate: 5.0e-05
+power: 0.0
+momentum: 0.9
+weight_decay: 0.0005
+epr: 1
+src_sampling_policy: r
+kc_policy: cb
+kc_value: conf
+init_tgt_port: 0.2
+max_tgt_port: 0.5
+tgt_port_step: 0.05
+max_src_port: 1
+src_port_step: 0
+mine_port: 0.001
+rare_cls_num: 3
+mine_chance: 0.8
+save_path: debug
+test_image_size:
+- 1024
+- 512
+eval_scale: 0.9
+test_scale:
+- 0.9
+- 1.0
+- 1.2
+ds_rate: 10
+debug: false
+kc_policy_choices:
+- kc
+- none
+kc_value_choices:
+- conf
+- prob
+lambda_ent: 1
+lambda_div: 0.0
+lambda_ce: 1
+lambda_unc: 0.1
+freeze_classifier: false
+unc_noise: false
+decoders: 4
+dropout: 0.5
+num_rounds: 1
+input_size:
+- 1024
+- 512
+train_scale_src:
+- 0.5
+- 1.5
+train_scale_tgt:
+- 0.5
+- 1.5
+restore_from: ./pretrained/Cityscapes_source_class13.pth
+num_classes: 13
+init_src_port: 1
+base_size:
+- 1024
+- 512
+city_choices:
+- Rio
+- Rome
+- Taipei
+- Tokyo
+- cityscapes
