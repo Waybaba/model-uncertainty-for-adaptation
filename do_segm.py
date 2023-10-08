@@ -108,11 +108,21 @@ def train(mix_trainloader, model, interp, optimizer, args, logger):
         logger.info('iter = {} of {} completed, loss = {:.4f}'.format(i_iter+1, tot_iter, loss.item()))
 
 
-@hydra.main(version_base=None, config_path=str(root / "configs"), config_name="ur.yaml")	
+@hydra.main(version_base=None, config_path=str(root / "configs"), config_name="entry.yaml")	
 def main(args):
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     device = "cuda"
     osp = os.path
+
+    import wandb
+    wandb.init(
+		project=args.task_name,
+		tags=args.tags,
+		config=args,
+		dir=args.output_dir,
+		mode=args.wandb.mode,
+		id = args.output_dir.replace("/","_")
+	)
 
 
     # args = get_arguments()
@@ -220,7 +230,7 @@ def main(args):
         cleanup(args.save)
     cleanup(args.save)
     shutil.rmtree(save_pseudo_label_path)
-    test(model, args.num_rounds - 1)
+    test(model, args.num_rounds - 1, args, logger)
 
 
 if __name__ == "__main__":

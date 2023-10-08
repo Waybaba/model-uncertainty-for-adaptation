@@ -5,7 +5,6 @@ data_tgt_test_list: './datasets/NTHU_list/{}/test.txt'
 city: 'cityscapes'
 
 # Debugging and Logging
-debug: false
 save: 'debug'
 
 # Training hyperparameters
@@ -38,21 +37,22 @@ lambda_ssl: 0.1 # ! not used but in github run script
 
 # Neural Network Architecture details
 freeze_classifier: false
-unc_noise: false
+unc_noise: true
 decoders: 4
 dropout: 0.5
 base_size: [1024, 512]
-num_classes: 13
+num_classes: null
 restore_from: '/data/models/seg_models/UR/Cityscapes_source_class13.pth'
 input_size: [1024, 512]
 train_scale_src: [0.5, 1.5]
 train_scale_tgt: [0.5, 1.5]
 
 # Miscellaneous
-device: cuda
-no_src_data: false
+no_src_data: true
 info_max_loss: false
 
-
+# Path: configs/experiment/ur.yaml
+debug: false
+device: cuda
 tags: ["plightning"]
 task_name: "UR"
