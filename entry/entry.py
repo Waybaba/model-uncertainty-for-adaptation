@@ -33,10 +33,10 @@ else:
 
 ### utils
 
-from pytorch_lightning.utilities.logger import _convert_params, _flatten_dict, _sanitize_callable_params
 
 def config_format(cfg: DictConfig) -> DictConfig:
 	"""Formats config to be saved to wandb."""
+	from pytorch_lightning.utilities.logger import _convert_params, _flatten_dict, _sanitize_callable_params
 	params = _convert_params(_flatten_dict(_sanitize_callable_params(cfg)))
 	return params
 
@@ -67,8 +67,8 @@ def copy_all_files(src_dir: str, dst_dir: str) -> None:
 			shutil.copy2(src_path, dst_path)
 
 def print_config_tree(
-	cfg: DictConfig,
-	print_order: Sequence[str] = (
+	cfg,
+	print_order = (
 		"task_name", 
 		"tags", 
 		"env", 

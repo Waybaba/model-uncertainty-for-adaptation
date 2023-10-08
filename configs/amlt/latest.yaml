@@ -14,16 +14,23 @@ environment:
 search:
   job_template:
     command:
-    - python do_segm.py  batch_size=2 restore_from=/data/models/seg_models/UR/GTA5_source.pth
-      no_src_data=true city=cityscapes unc_noise=true tags=[plightning2] task_name=UR  learning_rate={learning_rate_}
+    - python do_segm.py  experiment=ur restore_from=/data/models/seg_models/UR/GTA5_source.pth
+      no_src_data=true city=cityscapes unc_noise=true debug=false num_rounds=10 tags=[plightning4]
+      task_name=UR  batch_size={batch_size_} learning_rate={learning_rate_}
     name: RL_Delayed_{experiment_name:s}_{auto:5s}
-    sku: G1-P100
+    sku: G1-P40
   max_trials: 10000
   params:
+  - name: batch_size_
+    values:
+    - 2
+    - 4
   - name: learning_rate_
     values:
-    - 1.0e-09
-    - 0.01
+    - 1.0e-05
+    - 1.0e-06
+    - 1.0e-07
+    - 1.0e-08
   type: grid
 storage:
   input:

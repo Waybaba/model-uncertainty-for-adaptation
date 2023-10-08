@@ -53,12 +53,11 @@
 			"console": "integratedTerminal",
 			"args": [
 				"experiment=ur",
-				// "city=cityscapes",
-				// "save=./tempx",
-				// "restore_from=/data/models/seg_models/UR/GTA5_source.pth",
-				// "batch_size=4",
-				// "learning_rate=1e-9",
-				// "debug=true"
+				"city=cityscapes",
+				"restore_from=/data/models/seg_models/UR/GTA5_source.pth",
+				"batch_size=4",
+				"learning_rate=1e-9",
+				"debug=true"
 			  ]
 		},
 	]

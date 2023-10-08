@@ -1,3 +1,5 @@
+# @package _global_
+
 # Dataset related configurations
 data_tgt_dir: './data/datasets/NTHU'
 data_tgt_train_list: './datasets/NTHU_list/{}/train.txt'
