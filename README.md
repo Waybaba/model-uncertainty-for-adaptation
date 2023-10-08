@@ -23,8 +23,12 @@ change cityscape in datasets/new_datasets.py to root=f'{os.environ.get("UDATADIR
 
 
 # train
+### cityscape to crosscity (source-only)
+python do_segm.py --city Rio --no-src-data --freeze-classifier --unc-noise --lambda-ce 1 --lambda-ent 1  --save ./temp --lambda-ssl 0.1 --learning-rate 0.0 --num-rounds 0
+
 ### cityscape to crosscity
 python do_segm.py --city Rio --no-src-data --freeze-classifier --unc-noise --lambda-ce 1 --lambda-ent 1  --save ./temp --lambda-ssl 0.1
+
 
 ### custom
 python do_segm.py --city Rio --no-src-data --freeze-classifier --unc-noise --lambda-ce 1 --lambda-ent 1  --save ./temp --lambda-ssl 0.1 \
