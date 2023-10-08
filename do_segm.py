@@ -23,33 +23,85 @@ from torch.utils.data import DataLoader
 from datasets import (CityscapesDataset, CrossCityDataset, get_test_transforms,
 					  get_train_transforms)
 from generate_pseudo_labels import validate_model
-from network import DeeplabMulti as DeepLab
-from network import JointSegAuxDecoderModel, NoisyDecoders
 from utils import (ScoreUpdater, adjust_learning_rate, cleanup,
 				   get_arguments, label_selection, parse_split_list,
 				   savelst_tgt, seed_torch, self_training_regularized_infomax,
 				   self_training_regularized_infomax_cct, set_logger)
+from datasets import CrossCityDataset, get_val_transforms
+from tqdm import tqdm
+from PIL import Image
+from utils import ScoreUpdater, colorize_mask
+import logging
 
+def validate_model(model, save_round_eval_path, round_idx, args):
+	logger = logging.getLogger('crosscityadap')
+	## Doubles as a pseudo label generator
+	osp = os.path
+	val_transforms = get_val_transforms(args)
+	if args.city != 'cityscapes':
+		dataset = CrossCityDataset(root=args.data_tgt_dir, list_path=args.data_tgt_train_list.format(args.city), transforms=val_transforms)
 
-def make_network(args):
-	model = DeepLab(args.num_classes, False)
-	model = torch.nn.DataParallel(model)
-	rf = torch.load(args.restore_from, map_location=args.device)
-	sd = rf['state_dict'] if 'state_dict' in rf else rf
-	if 'state_dict' in rf:
-		sd = rf['state_dict']
 	else:
-		sd = rf
-		sd = {"module."+k: v for k, v in sd.items()}
-	# add prefix 'module.' to every key
-	model.load_state_dict(sd)
+		dataset = CityscapesDataset(
+			# pseudo_root=save_pseudo_label_path, 
+			list_path='./datasets/city_list/val.txt',
+			transforms=val_transforms,
+			debug=args.debug)
+	loader = DataLoader(dataset, batch_size=12, num_workers=4, pin_memory=torch.cuda.is_available())
 
-	model = model.module
-	if args.unc_noise:
-		aux_decoders = NoisyDecoders(args.decoders, args.dropout, args.num_classes)
-		model = JointSegAuxDecoderModel(model, aux_decoders)
-	return model
+	scorer = ScoreUpdater(args.num_classes, len(loader))
 
+	save_pred_vis_path = osp.join(save_round_eval_path, 'pred_vis')
+	save_prob_path = osp.join(save_round_eval_path, 'prob')
+	save_pred_path = osp.join(save_round_eval_path, 'pred')
+	if not os.path.exists(save_pred_vis_path):
+		os.makedirs(save_pred_vis_path)
+	if not os.path.exists(save_prob_path):
+		os.makedirs(save_prob_path)
+	if not os.path.exists(save_pred_path):
+		os.makedirs(save_pred_path)
+
+	conf_dict = {k: [] for k in range(args.num_classes)}
+	pred_cls_num = np.zeros(args.num_classes)
+	## evaluation process
+	logger.info('###### Start evaluating target domain train set in round {}! ######'.format(round_idx))
+	start_eval = time.time()
+	model.eval()
+	with torch.no_grad():
+		for batch in tqdm(loader):
+			image, label, name = batch
+
+			image = image.to(args.device)
+			output = model(image).cpu().softmax(1)
+
+			flipped_out = model(image.flip(-1)).cpu().softmax(1)
+			output = 0.5 * (output + flipped_out.flip(-1))
+
+			# image = image.cpu()
+			pred_prob, pred_labels = output.max(1)
+			# scorer.update(pred_labels.view(-1), label.view(-1))
+
+			for b_ind in range(image.size(0)):
+				image_name = name[b_ind].split('/')[-1].split('.')[0]
+
+				np.save('%s/%s.npy' % (save_prob_path, image_name), output[b_ind].numpy().transpose(1, 2, 0))
+				if args.debug:
+					colorize_mask(pred_labels[b_ind].numpy().astype(np.uint8)).save(
+						'%s/%s_color.png' % (save_pred_vis_path, image_name))
+				Image.fromarray(pred_labels[b_ind].numpy().astype(np.uint8)).save(
+					'%s/%s.png' % (save_pred_path, image_name))
+
+			if args.kc_value == 'conf':
+				for idx_cls in range(args.num_classes):
+					idx_temp = pred_labels == idx_cls
+					pred_cls_num[idx_cls] = pred_cls_num[idx_cls] + idx_temp.sum()
+					if idx_temp.any():
+						conf_cls_temp = pred_prob[idx_temp].numpy().astype(np.float32)[::args.ds_rate]
+						conf_dict[idx_cls].extend(conf_cls_temp)
+	model.train()
+	logger.info('###### Finish evaluating target domain train set in round {}! Time cost: {:.2f} seconds. ######'.format(
+		round_idx, time.time() - start_eval))
+	return conf_dict, pred_cls_num, save_prob_path, save_pred_path
 
 def test(model, round_idx, args, logger):
 	transforms = get_test_transforms()
@@ -81,7 +133,6 @@ def test(model, round_idx, args, logger):
 		round_idx, time.time()-start_eval))
 	return scorer.scores()
 
-
 def train(mix_trainloader, model, interp, optimizer, args, logger):
 	"""Create the model and start the training."""
 	tot_iter = len(mix_trainloader)
@@ -93,8 +144,8 @@ def train(mix_trainloader, model, interp, optimizer, args, logger):
 		adjust_learning_rate(optimizer, i_iter, tot_iter, args)
 
 		if args.info_max_loss:
-			pred = model(images.to(device), training=True)
-			loss = self_training_regularized_infomax(pred, labels.to(device), args)
+			pred = model(images.to(args.device), training=True)
+			loss = self_training_regularized_infomax(pred, labels.to(args.device), args)
 		elif args.unc_noise:
 			pred, noise_pred = model(images.to(args.device), training=True)
 			loss = self_training_regularized_infomax_cct(pred, labels.to(args.device), noise_pred, args)
