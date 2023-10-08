@@ -27,12 +27,12 @@ def label_mapper_crosscity_13():
             32: 11,
             33: 12,
             # comment the below to 13 classes
-            26: 13,
-            27: 14,
-            28: 15,
-            31: 16,
-            32: 17,
-            33: 18,
+            # 26: 13,
+            # 27: 14,
+            # 28: 15,
+            # 31: 16,
+            # 32: 17,
+            # 33: 18,
             # uncomment the below to 13 classes
             27: 255,
             26: 9,
@@ -56,8 +56,8 @@ def label_mapper_cityscapes_19():
         arr[x] = mapper[x]
     return arr
 
-# label_mapper = label_mapper_crosscity_13
-label_mapper = label_mapper_cityscapes_19
+label_mapper = label_mapper_crosscity_13
+# label_mapper = label_mapper_cityscapes_19
 
 def get_train_transforms(args, mine_id):
     label_to_id = label_mapper()

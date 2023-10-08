@@ -1,10 +1,3 @@
-#
-# SPDX-FileCopyrightText: 2021 Idiap Research Institute
-#
-# Written by Prabhu Teja <prabhu.teja@idiap.ch>,
-#
-# SPDX-License-Identifier: MIT
-
 import pyrootutils
 root = pyrootutils.setup_root(__file__, dotenv=True, pythonpath=True, indicator=["configs"])
 import hydra
@@ -22,17 +15,85 @@ from torch.utils.data import DataLoader
 
 from datasets import (CityscapesDataset, CrossCityDataset, get_test_transforms,
 					  get_train_transforms)
-from generate_pseudo_labels import validate_model
 from utils import (ScoreUpdater, adjust_learning_rate, cleanup,
 				   get_arguments, label_selection, parse_split_list,
 				   savelst_tgt, seed_torch, self_training_regularized_infomax,
-				   self_training_regularized_infomax_cct, set_logger)
+				   self_training_regularized_infomax_cct, set_logger, make_network)
 from datasets import CrossCityDataset, get_val_transforms
 from tqdm import tqdm
 from PIL import Image
 from utils import ScoreUpdater, colorize_mask
 import logging
 
+# utils
+def config_format(cfg):
+	"""Formats config to be saved to wandb."""
+	from pytorch_lightning.utilities.logger import _convert_params, _flatten_dict, _sanitize_callable_params
+	params = _convert_params(_flatten_dict(_sanitize_callable_params(cfg)))
+	return params
+
+def print_config_tree(
+	cfg,
+	print_order = (
+		"task_name", 
+		"tags", 
+		"env", 
+		"net",
+		"policy", 
+		"optimizer", 
+		"train_collector", 
+		"test_collector",
+		"trainer",
+	),
+	resolve: bool = False,
+	save_to_file: bool = False,
+	) -> None:
+	"""Prints content of DictConfig using Rich library and its tree structure.
+
+	Args:
+		cfg (DictConfig): Configuration composed by Hydra.
+		print_order (Sequence[str], optional): Determines in what order config components are printed.
+		resolve (bool, optional): Whether to resolve reference fields of DictConfig.
+		save_to_file (bool, optional): Whether to export config to the hydra output folder.
+	"""
+	from omegaconf import DictConfig, OmegaConf
+	import rich
+	import rich.syntax
+	import rich.tree
+	style = "dim"
+	tree = rich.tree.Tree("CONFIG", style=style, guide_style=style)
+
+	queue = []
+
+	# add fields from `print_order` to queue
+	for field in print_order:
+		queue.append(field) if field in cfg else None
+
+	# add all the other fields to queue (not specified in `print_order`)
+	for field in cfg:
+		if field not in queue:
+			queue.append(field)
+
+	# generate config tree from queue
+	for field in queue:
+		branch = tree.add(field, style=style, guide_style=style)
+		config_group = cfg[field]
+		if isinstance(config_group, DictConfig):
+			branch_content = OmegaConf.to_yaml(config_group, resolve=resolve)
+		else:
+			branch_content = str(config_group)
+
+		branch.add(rich.syntax.Syntax(branch_content, "yaml"))
+
+	# print config tree
+	rich.print(tree)
+
+	# save config tree to file
+	if save_to_file:
+		with open(Path(cfg.paths.output_dir, "config_tree.log"), "w") as file:
+			rich.print(tree, file=file)
+
+# main
 def validate_model(model, save_round_eval_path, round_idx, args):
 	logger = logging.getLogger('crosscityadap')
 	## Doubles as a pseudo label generator
@@ -157,74 +218,6 @@ def train(mix_trainloader, model, interp, optimizer, args, logger):
 		optimizer.step()
 
 		logger.info('iter = {} of {} completed, loss = {:.4f}'.format(i_iter+1, tot_iter, loss.item()))
-
-
-def config_format(cfg):
-	"""Formats config to be saved to wandb."""
-	from pytorch_lightning.utilities.logger import _convert_params, _flatten_dict, _sanitize_callable_params
-	params = _convert_params(_flatten_dict(_sanitize_callable_params(cfg)))
-	return params
-
-def print_config_tree(
-	cfg,
-	print_order = (
-		"task_name", 
-		"tags", 
-		"env", 
-		"net",
-		"policy", 
-		"optimizer", 
-		"train_collector", 
-		"test_collector",
-		"trainer",
-	),
-	resolve: bool = False,
-	save_to_file: bool = False,
-	) -> None:
-	"""Prints content of DictConfig using Rich library and its tree structure.
-
-	Args:
-		cfg (DictConfig): Configuration composed by Hydra.
-		print_order (Sequence[str], optional): Determines in what order config components are printed.
-		resolve (bool, optional): Whether to resolve reference fields of DictConfig.
-		save_to_file (bool, optional): Whether to export config to the hydra output folder.
-	"""
-	from omegaconf import DictConfig, OmegaConf
-	import rich
-	import rich.syntax
-	import rich.tree
-	style = "dim"
-	tree = rich.tree.Tree("CONFIG", style=style, guide_style=style)
-
-	queue = []
-
-	# add fields from `print_order` to queue
-	for field in print_order:
-		queue.append(field) if field in cfg else None
-
-	# add all the other fields to queue (not specified in `print_order`)
-	for field in cfg:
-		if field not in queue:
-			queue.append(field)
-
-	# generate config tree from queue
-	for field in queue:
-		branch = tree.add(field, style=style, guide_style=style)
-		config_group = cfg[field]
-		if isinstance(config_group, DictConfig):
-			branch_content = OmegaConf.to_yaml(config_group, resolve=resolve)
-		else:
-			branch_content = str(config_group)
-
-		branch.add(rich.syntax.Syntax(branch_content, "yaml"))
-
-	# print config tree
-	rich.print(tree)
-
-	# save config tree to file
-	if save_to_file:
-		with open(Path(cfg.paths.output_dir, "config_tree.log"), "w") as file:
-			rich.print(tree, file=file)
 
 @hydra.main(version_base=None, config_path=str(root / "configs"), config_name="entry.yaml")	
 def main(args):

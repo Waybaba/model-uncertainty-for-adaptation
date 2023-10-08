@@ -14,8 +14,8 @@ environment:
 search:
   job_template:
     command:
-    - python do_segm.py  experiment=ur restore_from=/data/models/seg_models/UR/GTA5_source.pth
-      no_src_data=true city=cityscapes unc_noise=true debug=false num_rounds=10 tags=[plightning4]
+    - python do_segm.py  experiment=ur restore_from=/data/models/seg_models/UR/Cityscapes_source_class13.pth
+      no_src_data=true city=Rio unc_noise=true debug=false num_rounds=10 tags=[plightning7]
       task_name=UR  batch_size={batch_size_} learning_rate={learning_rate_}
     name: RL_Delayed_{experiment_name:s}_{auto:5s}
     sku: G1-P40
@@ -27,6 +27,10 @@ search:
     - 4
   - name: learning_rate_
     values:
+    - 0.0
+    - 0.01
+    - 0.001
+    - 0.0001
     - 1.0e-05
     - 1.0e-06
     - 1.0e-07
